@@ -138,12 +138,11 @@
 }
 @media (max-width: 600px) {
   .site-header .portal-links { margin-left: auto; gap: 10px; }
-  .site-header .brand { font-size: 18px; }
   .site-header .brand-mark { margin-right: 4px; }
   .site-header .brand-mark svg { width: 21px; }
   .user-portal-link { display: none; }
   .site-header { height: 74px; padding-inline: 6%; }
-  .site-header .brand { font-size: 20px; }
+  .site-header .brand { font-size: 17px; }
   .site-header .nav { background: #f5f3ee; top: 74px; border-color: #253b3020; }
   .site-header .nav a { font-size: 13px; }
   .site-header .portal-button { margin-right: 8px; padding-inline: 11px; }

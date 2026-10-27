@@ -18,6 +18,11 @@ Open the local URL printed by Next.js. `npm run build` creates the production bu
 - User demo profile held in page memory; refreshing clears it.
 - Simulated SOS, LGU brief, illustrative location diagram, dispatch, resolution, and reset.
 - Responsive navigation, native modal focus containment, Escape dismissal, reduced-motion support, and accessible control names.
+- Separate personal and LGU account pages: `/user/login`, `/user/create-account`, `/lgu/login`, and `/lgu/create-account`. The shared form provides inline validation, password confirmation and visibility controls, and a password-reset dialog. LGU registration includes organization, jurisdiction, and department details.
+
+## Account-page behavior
+
+The account pages are frontend previews. Valid submissions show an explicit service-unavailable message; they never claim to authenticate, create accounts, send reset emails, or submit an LGU access request. Credentials are not sent to a backend or persisted by application code. Use sample data for previews. LGU approval messaging describes the intended access policy; enforcement must be implemented in the backend before real account services are enabled.
 
 ## Integration boundaries
 
