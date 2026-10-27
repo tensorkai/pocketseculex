@@ -13,7 +13,7 @@ Open the local URL printed by Next.js. `npm run build` creates the production bu
 
 ## Included
 
-- Cinematic urban landing page and an interactive CSS 3D device with six faces, screen, dual triggers, woven strap, and buckle. Drag horizontally or use the rotation buttons.
+- An elevated morning city lobby with restrained ivory/forest typography and a Three.js device: continuous rounded shell, illuminated display, dual triggers, woven strap, and metal buckle. Drag horizontally or use the rotation and reset buttons.
 - Thesis-based system overview, architecture, and mission sections.
 - User demo profile held in page memory; refreshing clears it.
 - Simulated SOS, LGU brief, illustrative location diagram, dispatch, resolution, and reset.
@@ -25,4 +25,8 @@ This is a frontend prototype, not an operational emergency service. No authentic
 
 ## Assets
 
-The local [city photograph](public/city-night.jpg) was downloaded from [Unsplash](https://images.unsplash.com/photo-1519608487953-e999c86e7455). It provides fictional urban atmosphere and is not presented as a photograph of the demo location. The device, icons, and technical illustration are rendered with CSS and inline SVG; no external model runtime or font service is required.
+The lobby uses a locally saved [morning city backdrop](public/city-morning.webp), generated with the built-in image-generation tool and optimized to WebP. It depicts a fictional city, not a verified location. The previous [nighttime photograph](public/city-night.jpg), from [Unsplash](https://images.unsplash.com/photo-1519608487953-e999c86e7455), is retained but no longer used by the lobby.
+
+Generation prompt: “Use case: photorealistic-natural. Asset type: wide website background, 16:9 landscape. A realistic cinematic elevated aerial view looking diagonally down over a dense modern city in the early morning, Manila-inspired urban blocks, mid-rise concrete buildings, a few glass towers, treelined streets, rooftops and roads visible far below. High rooftop or drone viewpoint, no street-level viewpoint. Warm pale morning sunshine, atmospheric haze in the distance, natural ivory concrete, soft blue-grey shadows, muted sage trees. Sophisticated architectural editorial photograph, believable and calm, no neon, no night, no saturated orange sunset, no sci-fi. Composition: city buildings predominantly on the right two thirds and bottom, distant hazy urban landscape on the left so dark headline text can overlay left side using a light scrim. No text, no logos, no device, no interface. Fine realistic detail, 35mm aerial photography.”
+
+The [device renderer](app/device-model.tsx) loads Three.js on the client. It caps pixel density, renders on demand, pauses offscreen, disposes GPU resources on unmount, and provides a static CSS preview if WebGL is unavailable. Reduced motion disables interpolated rotation. Icons remain inline SVG; no external font service is required.

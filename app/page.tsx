@@ -1,6 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
+import DeviceModel from "./device-model";
+import "./lobby.css";
 
 type IconName = "shield" | "arrow" | "pin" | "signal" | "bolt" | "play" | "cross" | "check";
 function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
@@ -17,28 +20,6 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-function Device() {
-  const [angle, setAngle] = useState(-24);
-  const start = useRef<number | null>(null);
-  return <div className="device-experience">
-    <div className="device-caption"><span className="tiny-cross">+</span> POCKETSECULEX / PROTOTYPE 01</div>
-    <div className="device-stage" onPointerDown={e => { start.current = e.clientX; e.currentTarget.setPointerCapture(e.pointerId); }} onPointerMove={e => { if (start.current !== null) { const delta = (e.clientX - start.current) * .45; start.current = e.clientX; setAngle(a => a + delta); } }} onPointerUp={() => start.current = null} onPointerCancel={() => start.current = null}>
-      <div className="device" role="img" aria-label="Interactive 3D PocketSeculex concept: graphite box, illuminated screen, two orange SOS buttons, and a woven bag strap" style={{ transform: `rotateX(9deg) rotateY(${angle}deg) rotateZ(-9deg)` }}>
-        <div className="strap strap-top"><div className="buckle" /></div><div className="strap strap-bottom" />
-        <div className="face back"><span>POCKETSECULEX</span><small>ESP32 · GNSS · LTE<br/>CONCEPT / 001</small></div>
-        <div className="face side-left"/><div className="face side-right"><div className="port"/></div><div className="face top"/><div className="face bottom"/>
-        <div className="face front"><i className="screw tl"/><i className="screw tr"/><i className="screw bl"/><i className="screw br"/>
-          <div className="device-brand"><Icon name="shield" size={17}/> POCKET<span>SECULEX</span></div>
-          <div className="screen"><div className="screen-top"><span>GNSS FIX</span><span>▥ 98%</span></div><Icon name="shield" size={43}/><strong>YOU’RE CONNECTED</strong><span className="screen-sub">Ready when it matters.</span><div className="screen-line"/><div className="screen-bottom"><span>14.5995° N<br/>120.9842° E</span><span>LTE <b>●</b></span></div></div>
-          <div className="device-buttons"><div>Ⅰ</div><span>PRESS BOTH<br/>FOR SOS</span><div>Ⅱ</div></div><div className="device-footer"><span className="led"/> SYSTEM READY <span className="speaker">||||||||</span></div>
-        </div>
-      </div>
-    </div>
-    <div className="device-callout"><span className="callout-line"/><span><b>Built to stay with you.</b><br/>Bag-attached. Always within reach.</span></div>
-    <div className="rotate-controls"><button aria-label="Rotate device left" onClick={() => setAngle(a => a - 30)}>↶</button><span>DRAG TO EXPLORE <span className="muted">/</span> 3D CONCEPT</span><button aria-label="Rotate device right" onClick={() => setAngle(a => a + 30)}>↷</button></div>
-  </div>;
-}
-
 export default function Home() {
   const dialog = useRef<HTMLDialogElement>(null);
   const [mode, setMode] = useState<"user" | "lgu" | "demo">("demo");
@@ -52,16 +33,28 @@ export default function Home() {
     <header className="site-header"><a className="brand" href="#" aria-label="PocketSeculex home"><span className="brand-mark"><Icon name="shield" size={25}/></span>Pocket<span>Seculex</span></a>
       <button className="menu-toggle" aria-expanded={menu} aria-label="Toggle navigation" onClick={() => setMenu(!menu)}>☰</button>
       <nav className={menu ? "nav open" : "nav"} aria-label="Main navigation"><a className="active" href="#main" onClick={() => setMenu(false)}>Overview</a><a href="#how-it-works" onClick={() => setMenu(false)}>How it works</a><a href="#technology" onClick={() => setMenu(false)}>Technology</a><a href="#mission" onClick={() => setMenu(false)}>Our mission</a></nav>
-      <button className="portal-button" onClick={() => open("lgu")}><Icon name="shield" size={16}/> LGU Portal <span>↗</span></button>
+      <div className="portal-links"><Link className="user-portal-link" href="/user/login">Sign in</Link><Link className="portal-button" href="/lgu/login"><Icon name="shield" size={16}/> LGU Portal <span>↗</span></Link></div>
     </header>
     <main id="main">
-      <section className="hero" aria-labelledby="hero-title"><div className="city-backdrop"/><div className="city-grid"/><div className="hero-atmosphere"/>
-        <div className="hero-content"><div className="eyebrow"><span className="status-dot"/> PERSONAL SAFETY. CONNECTED.</div><h1 id="hero-title">A small device.<br/>A stronger<br/><span>line of defense.</span></h1><p className="hero-description">The city never stops. Neither should your safety.<br className="desktop-break"/> Meet PocketSeculex — your direct connection to<br className="desktop-break"/> help, when every second matters.</p>
-          <div className="hero-actions"><button className="button primary" onClick={() => open("user")}>Get connected <Icon name="arrow" size={18}/></button><button className="button watch" onClick={() => open("demo")}><span className="play-circle"><Icon name="play" size={13}/></span> See it in action</button></div>
-          <div className="hero-note"><Icon name="shield" size={15}/><span>Designed for everyday life. Ready for the unexpected.</span></div>
+      <section className="hero" aria-labelledby="hero-title">
+        <div className="city-backdrop" />
+        <div className="hero-atmosphere" />
+        <div className="hero-content">
+          <p className="edition-label">PocketSeculex <span>Personal safety, considered.</span></p>
+          <h1 id="hero-title">Out in the city.<br /><em>Never on your own.</em></h1>
+          <p className="hero-description">A direct line to help, carried on your bag.<br />Meet the personal safety device that connects<br className="desktop-break" /> you with your local emergency responders.</p>
+          <div className="hero-actions">
+            <Link className="button primary" href="/user/create-account">Get connected <Icon name="arrow" size={18} /></Link>
+            <button className="button watch" onClick={() => open("demo")}>How it works <span aria-hidden="true">↗</span></button>
+          </div>
+          <div className="hero-note"><span className="note-rule" /><span>One device. A more reassuring everyday.</span></div>
         </div>
-        <Device/>
-        <div className="scene-meta"><span><i/> BUILT FOR EVERYDAY JOURNEYS</span><span>YOUR CITY. YOUR SAFETY. YOUR CONNECTION.</span><a href="#how-it-works">SCROLL TO DISCOVER ↓</a></div>
+        <DeviceModel />
+        <div className="scene-meta">
+          <span>01 / THE EVERYDAY COMPANION</span>
+          <span className="prototype-caption">PocketSeculex · Design concept</span>
+          <a href="#how-it-works">A closer look <span aria-hidden="true">↓</span></a>
+        </div>
       </section>
       <section className="feature-strip" aria-label="Core capabilities"><div><Icon name="bolt"/><span><b>One deliberate action.</b><small>Dual-button emergency trigger</small></span></div><div><Icon name="pin"/><span><b>Your location. Precisely.</b><small>GNSS-powered positioning</small></span></div><div><Icon name="signal"/><span><b>Connected beyond your phone.</b><small>Dedicated 5G / LTE connectivity</small></span></div><div><Icon name="shield"/><span><b>A clearer path to help.</b><small>AI-assisted LGU response</small></span></div></section>
       <section className="how-section section-wrap" id="how-it-works"><div className="section-heading"><div><div className="eyebrow orange">FROM SIGNAL TO SUPPORT</div><h2>When you need help,<br/>every connection counts.</h2></div><p>One connected ecosystem. From the device on your bag to the responders in your community.</p></div>
