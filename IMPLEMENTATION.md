@@ -26,6 +26,12 @@ The account pages use Supabase Auth for signup, password sign-in, confirmation r
 
 Personal accounts can edit their profile and view their assigned devices and incidents. LGU accounts retain organization details in signup metadata, then explicitly submit them for review after confirming their email and signing in. Only active organization members can load LGU incidents and change their status. Profiles and memberships must already exist in the configured schema. Realtime refreshes incidents; membership changes are rechecked every 30 seconds and on window focus. Contact/location details are fetched on demand with RLS. Previously displayed data cannot be retroactively revoked.
 
+### Local database scripts
+
+The local-only `supabase/` folder contains `01-schema.sql` (tables, profile signup trigger, existing-account backfill, RLS, grants, and Realtime publication), `02-verify.sql` (read-only setup checks), and `03-approve-responder.sql` (optional administrator approval). Paste these into Supabase SQL Editor; they are not deployed by the website. The folder is ignored by Git and must be backed up separately. Its README provides the setup order, email templates, and live-account checks.
+
+The signup trigger creates the profile required by `/account`; the backfill repairs users registered before schema installation. LGU membership is granted only after administrator approval. Installing the SQL does not configure Auth email delivery, URL allowlists, or hosting environment variables.
+
 ### Environment and email links
 
 Next.js does not load `.env.example`. Put `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) in `.env.local` locally and in the hosting provider's environment settings for deployment. Restart the dev server after changing values; production public values require a rebuild. Never use a service-role key for these variables.
@@ -37,6 +43,8 @@ In Supabase Authentication URL Configuration, set the Site URL to the actual web
 - The same two paths on your deployed HTTPS origin (and `127.0.0.1` if you use that hostname).
 
 Default Supabase email templates work through the PKCE code exchange at `/auth/callback`; open the email in the same browser used to sign up/request recovery. If you customized templates to use token hashes, use `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email` for confirmation and `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery` for recovery. The callback only permits account or password-update destinations. Expired/invalid links show a recovery page. Passwords are submitted only to Supabase, never stored in application tables or signup metadata.
+
+If configuration is absent, account routes show a setup message and the homepage remains usable. Signup retains the email address and offers confirmation resend directly after registration. Database signup errors are distinguished from incorrect passwords and network failures.
 
 ### Verification
 
