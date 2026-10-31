@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import DeviceModel from "./device-model";
+import AccountLink from "./account-link";
 import "./lobby.css";
 
 type IconName = "shield" | "arrow" | "pin" | "signal" | "bolt" | "play" | "cross" | "check";
@@ -33,7 +34,7 @@ export default function Home() {
     <header className="site-header"><a className="brand" href="#" aria-label="PocketSeculex home"><span className="brand-mark"><Icon name="shield" size={25}/></span>Pocket<span>Seculex</span></a>
       <button className="menu-toggle" aria-expanded={menu} aria-label="Toggle navigation" onClick={() => setMenu(!menu)}>☰</button>
       <nav className={menu ? "nav open" : "nav"} aria-label="Main navigation"><a className="active" href="#main" onClick={() => setMenu(false)}>Overview</a><a href="#how-it-works" onClick={() => setMenu(false)}>How it works</a><a href="#technology" onClick={() => setMenu(false)}>Technology</a><a href="#mission" onClick={() => setMenu(false)}>Our mission</a></nav>
-      <div className="portal-links"><Link className="user-portal-link" href="/user/login">Sign in</Link><Link className="portal-button" href="/lgu/login"><Icon name="shield" size={16}/> LGU Portal <span>↗</span></Link></div>
+      <div className="portal-links"><AccountLink /><Link className="portal-button" href="/lgu/dashboard"><Icon name="shield" size={16}/> LGU Portal <span>↗</span></Link></div>
     </header>
     <main id="main">
       <section className="hero" aria-labelledby="hero-title">

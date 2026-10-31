@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
+import { browserClient } from "@/lib/supabase/client";
+import { authMessage } from "@/lib/supabase/auth";
 
 type Portal = "user" | "lgu";
 type Mode = "login" | "register";
@@ -15,20 +18,24 @@ function Eye({ visible }: { visible: boolean }) {
 }
 
 export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mode }) {
+  const router = useRouter();
   const lgu = portal === "lgu";
   const register = mode === "register";
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const resetDialog = useRef<HTMLDialogElement>(null);
   const [resetStatus, setResetStatus] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const base = `/${portal}`;
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     const data = new FormData(event.currentTarget);
     const value = (key: string) => String(data.get(key) ?? "");
     const next: Record<string, string> = {};
@@ -51,13 +58,56 @@ export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mod
       formRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${first}"]`)?.focus();
       return;
     }
-    // Never simulate authentication or persist credentials. The service seam is
-    // intentionally explicit until a secured authentication backend is supplied.
-    setFeedback(register
-      ? lgu ? "Your request passed validation. Account services are not connected, so no access request has been submitted. LGU access will require administrator approval."
-        : "Your details passed validation. Account services are not connected, so no account has been created."
-      : "Account services are not connected yet. You have not been signed in, and your credentials have not been sent or saved.");
-    requestAnimationFrame(() => feedbackRef.current?.focus());
+    setBusy(true);
+    try {
+      const supabase = browserClient();
+      if (register) {
+        const { data: result, error } = await supabase.auth.signUp({
+          email: value("email").trim(), password: value("password"),
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              account_type: portal, name: value("name").trim(),
+              ...(lgu ? { organization: value("organization").trim(), jurisdiction: value("jurisdiction").trim(), department: value("department") } : { phone: value("phone").trim() }),
+            },
+          },
+        });
+        if (error) throw error;
+        if (result.session) { router.replace("/account"); router.refresh(); return; }
+        setFeedback("Check your inbox to confirm your email, then sign in. If you already have an account, sign in or reset your password.");
+        formRef.current?.reset();
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: value("email").trim(), password: value("password") });
+        if (error) throw error;
+        router.replace("/account"); router.refresh();
+      }
+    } catch (error) { setFeedback(authMessage(error)); }
+    finally { setBusy(false); requestAnimationFrame(() => feedbackRef.current?.focus()); }
+  }
+
+  async function resendConfirmation() {
+    const email = String(new FormData(formRef.current!).get("email") ?? "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setFeedback("Enter your email address above first."); return; }
+    setBusy(true);
+    try {
+      const { error } = await browserClient().auth.resend({ type: "signup", email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } });
+      if (error) throw error;
+      setFeedback("If your account needs confirmation, a new link has been sent. Check your inbox and spam folder.");
+    } catch (error) { setFeedback(authMessage(error)); }
+    finally { setBusy(false); }
+  }
+
+  async function resetPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (resetBusy) return;
+    const email = String(new FormData(event.currentTarget).get("email") ?? "").trim();
+    setResetBusy(true);
+    try {
+      const { error } = await browserClient().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password` });
+      if (error) throw error;
+      setResetStatus("If an account exists for this address, you’ll receive a password-reset link shortly.");
+    } catch (error) { setResetStatus(authMessage(error)); }
+    finally { setResetBusy(false); }
   }
 
   function field(name: string, label: string, options: { type?: string; placeholder?: string; autoComplete?: string; hint?: string } = {}) {
@@ -109,11 +159,12 @@ export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mod
             {field("password", "Password", { autoComplete: register ? "new-password" : "current-password", placeholder: register ? "Create a password" : "Enter your password", hint: register ? "At least 12 characters. A memorable phrase works well." : undefined })}
             {register && field("confirm", "Confirm password", { autoComplete: "new-password", placeholder: "Enter your password again" })}
             {!register && <div className="login-options field-full"><span><Shield/> Your account, your access.</span><button type="button" onClick={() => { setResetStatus(""); resetDialog.current?.showModal(); }}>Forgot password?</button></div>}
-            {feedback && <div ref={feedbackRef} className="auth-feedback field-full" role="status" tabIndex={-1}><strong>Prototype preview</strong><p>{feedback}</p></div>}
-            <button type="submit" className="auth-submit field-full">{register ? lgu ? "Request access" : "Create account" : "Sign in"}<span aria-hidden="true">→</span></button>
+            {feedback && <div ref={feedbackRef} className="auth-feedback field-full" role="status" tabIndex={-1}><p>{feedback}</p></div>}
+            <button type="submit" disabled={busy} aria-busy={busy} className="auth-submit field-full">{busy ? "Please wait…" : register ? lgu ? "Create LGU account" : "Create account" : "Sign in"}<span aria-hidden="true">→</span></button>
+            {!register && <button type="button" className="text-button field-full" disabled={busy} onClick={resendConfirmation}>Resend confirmation email</button>}
           </form>
           <p className="auth-alternative">{register ? "Already have an account?" : "New to PocketSeculex?"} <Link href={`${base}/${register ? "login" : "create-account"}`}>{register ? "Sign in" : lgu ? "Request access" : "Create an account"}</Link></p>
-          <div className="auth-prototype"><span>RESEARCH PREVIEW</span><p>Account services are not connected. Use sample details; this preview does not send or save credentials.</p></div>
+          <div className="auth-prototype"><span>YOUR ACCOUNT</span><p>{lgu ? "Confirm your email, then submit your organization details for review from your account. Incident access requires administrator approval." : "Your account and profile are securely stored. Emergency hardware services are separate from account registration."}</p></div>
         </div>
         <div className="auth-panel-footer"><span>PocketSeculex</span><span>{lgu ? "Stronger communities, together." : "A connection that matters."}</span></div>
       </section>
@@ -121,8 +172,8 @@ export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mod
     <dialog ref={resetDialog} className="reset-dialog" aria-labelledby="reset-title" onKeyDown={e => { if (e.key === "Escape") resetDialog.current?.close(); }} onClick={e => { if (e.target === resetDialog.current) resetDialog.current.close(); }}>
       <button type="button" className="reset-close" aria-label="Close password reset" onClick={() => resetDialog.current?.close()}>×</button><Shield/>
       <h2 id="reset-title">Let’s get you back in.</h2><p>Enter the email address associated with your {lgu ? "LGU" : "personal"} account.</p>
-      <form onSubmit={e => { e.preventDefault(); setResetStatus("Password reset is not connected in this prototype. No reset email has been sent."); }}><label htmlFor="reset-email">Email address</label><input id="reset-email" name="email" type="email" autoComplete="email" required placeholder="alex@example.com"/>{resetStatus && <p className="reset-status" role="status">{resetStatus}</p>}<button className="auth-submit" type="submit">Send reset link <span aria-hidden="true">→</span></button></form>
-      <small>Research preview · Use a sample email address.</small>
+      <form onSubmit={resetPassword}><label htmlFor="reset-email">Email address</label><input id="reset-email" name="email" type="email" autoComplete="email" required placeholder="alex@example.com"/>{resetStatus && <p className="reset-status" role="status">{resetStatus}</p>}<button className="auth-submit" type="submit" disabled={resetBusy}>{resetBusy ? "Sending…" : "Send reset link"} <span aria-hidden="true">→</span></button></form>
+      <small>Open the reset link in the same browser where you requested it.</small>
     </dialog>
   </div>;
 }
