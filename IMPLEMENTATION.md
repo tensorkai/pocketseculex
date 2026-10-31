@@ -22,11 +22,29 @@ Open the local URL printed by Next.js. `npm run build` creates the production bu
 
 ## Account-page behavior
 
-The account pages are frontend previews. Valid submissions show an explicit service-unavailable message; they never claim to authenticate, create accounts, send reset emails, or submit an LGU access request. Credentials are not sent to a backend or persisted by application code. Use sample data for previews. LGU approval messaging describes the intended access policy; enforcement must be implemented in the backend before real account services are enabled.
+The account pages use Supabase Auth for signup, password sign-in, confirmation resend, password-reset emails, and password updates. Cookie-based sessions are refreshed by [proxy.ts](proxy.ts); server-rendered account pages verify identity with Supabase before loading data. `/account` routes users to `/user/dashboard` or `/lgu/dashboard` using the stored profile category. Supabase RLS remains authoritative for every database operation; no service-role key is used.
+
+Personal accounts can edit their profile and view their assigned devices and incidents. LGU accounts retain organization details in signup metadata, then explicitly submit them for review after confirming their email and signing in. Only active organization members can load LGU incidents and change their status. Profiles and memberships must already exist in the configured schema. Realtime refreshes incidents; membership changes are rechecked every 30 seconds and on window focus. Contact/location details are fetched on demand with RLS. Previously displayed data cannot be retroactively revoked.
+
+### Environment and email links
+
+Next.js does not load `.env.example`. Put `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) in `.env.local` locally and in the hosting provider's environment settings for deployment. Restart the dev server after changing values; production public values require a rebuild. Never use a service-role key for these variables.
+
+In Supabase Authentication URL Configuration, set the Site URL to the actual website origin and allow these redirect URLs for each origin you use:
+
+- `http://localhost:3000/auth/callback`
+- `http://localhost:3000/auth/callback?next=/auth/update-password`
+- The same two paths on your deployed HTTPS origin (and `127.0.0.1` if you use that hostname).
+
+Default Supabase email templates work through the PKCE code exchange at `/auth/callback`; open the email in the same browser used to sign up/request recovery. If you customized templates to use token hashes, use `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email` for confirmation and `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery` for recovery. The callback only permits account or password-update destinations. Expired/invalid links show a recovery page. Passwords are submitted only to Supabase, never stored in application tables or signup metadata.
+
+### Verification
+
+Run `npm run lint`, `npx tsc --noEmit`, `npm run build`, and `npm run test:e2e`. Install the test browser once with `npx playwright install chromium`. Browser tests mock Supabase Auth responses to exercise personal/LGU signup payloads, password sign-in, cookie creation, error handling, recovery, and anonymous portal protection without sending emails or creating accounts. They do not certify the live database's RLS or email delivery. Use real confirmed personal and LGU accounts to verify deployment redirects and organization-scoped data access.
 
 ## Integration boundaries
 
-This is a frontend prototype, not an operational emergency service. No authentication, telemetry ingestion, persistent profile storage, live location subscription, Groq inference, or route computation is implemented. The LGU map and brief are explicitly illustrative. Supabase, hardware, Groq, and geographical routing need a separately secured backend integration before live use. The hardware appearance is a concept, not a manufacturing specification.
+Account authentication, persistent profiles, LGU access requests, RLS-scoped incident/device reads, incident status changes, and incident/location change subscriptions are integrated with Supabase. The homepage SOS walkthrough remains an explicitly labeled simulation; it does not create incidents. Hardware telemetry ingestion, Groq inference, and route computation remain separate integrations, so this is not an operational emergency service. The hardware appearance is a concept, not a manufacturing specification.
 
 ## Assets
 
