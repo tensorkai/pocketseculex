@@ -21,6 +21,14 @@ test("personal signup sends account category and displays confirmation", async (
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Check your inbox");
   expect(payload.data).toEqual({ account_type: "user", name: "Personal Test", phone: "+639171234567" });
+  await expect(page.getByRole("textbox", { name: "Email address", exact: true })).toHaveValue("personal@example.com");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
+  await page.route("**/auth/v1/resend**", route => {
+    expect(route.request().postDataJSON().email).toBe("personal@example.com");
+    return route.fulfill({ json: {} });
+  });
+  await page.getByRole("button", { name: "Resend confirmation email" }).click();
+  await expect(page.getByRole("status")).toContainText("a new link has been sent");
 });
 
 test("LGU signup retains review details without granting membership", async ({ page }) => {
@@ -90,4 +98,33 @@ test("protected portals redirect anonymous visitors", async ({ page }) => {
 test("invalid email callback cannot redirect to an external destination", async ({ page }) => {
   await page.goto("/auth/callback?next=https://example.com");
   await expect(page).toHaveURL(/\/auth\/error$/);
+});
+
+test("unconfirmed accounts can resend confirmation from sign-in", async ({ page }) => {
+  await page.route("**/auth/v1/token**", route => route.fulfill({ status: 400,
+    headers: { "x-supabase-api-version": "2024-01-01", "access-control-expose-headers": "x-supabase-api-version" },
+    json: { code: "email_not_confirmed", message: "Email not confirmed" } }));
+  await page.route("**/auth/v1/resend**", route => route.fulfill({ json: {} }));
+  await page.goto("/user/login");
+  await page.getByRole("textbox", { name: "Email address", exact: true }).fill("personal@example.com");
+  await page.getByLabel("Password", { exact: true }).fill("Sample password 123!");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Confirm your email");
+  await page.getByRole("button", { name: "Resend confirmation email" }).click();
+  await expect(page.getByRole("status")).toContainText("a new link has been sent");
+});
+
+test("signup database failure explains the setup problem and permits retry", async ({ page }) => {
+  await page.route("**/auth/v1/signup**", route => route.fulfill({ status: 500,
+    headers: { "x-supabase-api-version": "2024-01-01", "access-control-expose-headers": "x-supabase-api-version" },
+    json: { code: "unexpected_failure", message: "Database error saving new user" } }));
+  await page.goto("/user/create-account");
+  await page.getByLabel("Full name").fill("Personal Test");
+  await page.getByRole("textbox", { name: "Email address", exact: true }).fill("personal@example.com");
+  await page.getByLabel("Mobile number").fill("+639171234567");
+  await page.getByLabel("Password", { exact: true }).fill("Sample password 123!");
+  await page.getByLabel("Confirm password", { exact: true }).fill("Sample password 123!");
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("database signup trigger");
+  await expect(page.getByRole("button", { name: "Create account", exact: true })).toBeEnabled();
 });

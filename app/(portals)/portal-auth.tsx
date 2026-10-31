@@ -25,6 +25,7 @@ export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mod
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [confirmationEmail, setConfirmationEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -74,8 +75,12 @@ export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mod
         });
         if (error) throw error;
         if (result.session) { router.replace("/account"); router.refresh(); return; }
+        setConfirmationEmail(value("email").trim());
         setFeedback("Check your inbox to confirm your email, then sign in. If you already have an account, sign in or reset your password.");
-        formRef.current?.reset();
+        for (const name of ["password", "confirm"]) {
+          const input = formRef.current?.querySelector<HTMLInputElement>(`[name="${name}"]`);
+          if (input) input.value = "";
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: value("email").trim(), password: value("password") });
         if (error) throw error;
@@ -86,7 +91,8 @@ export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mod
   }
 
   async function resendConfirmation() {
-    const email = String(new FormData(formRef.current!).get("email") ?? "").trim();
+    if (busy) return;
+    const email = register ? confirmationEmail : String(new FormData(formRef.current!).get("email") ?? "").trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setFeedback("Enter your email address above first."); return; }
     setBusy(true);
     try {
@@ -161,7 +167,7 @@ export default function PortalAuth({ portal, mode }: { portal: Portal; mode: Mod
             {!register && <div className="login-options field-full"><span><Shield/> Your account, your access.</span><button type="button" onClick={() => { setResetStatus(""); resetDialog.current?.showModal(); }}>Forgot password?</button></div>}
             {feedback && <div ref={feedbackRef} className="auth-feedback field-full" role="status" tabIndex={-1}><p>{feedback}</p></div>}
             <button type="submit" disabled={busy} aria-busy={busy} className="auth-submit field-full">{busy ? "Please wait…" : register ? lgu ? "Create LGU account" : "Create account" : "Sign in"}<span aria-hidden="true">→</span></button>
-            {!register && <button type="button" className="text-button field-full" disabled={busy} onClick={resendConfirmation}>Resend confirmation email</button>}
+            {(!register || confirmationEmail) && <button type="button" className="text-button field-full" disabled={busy} onClick={resendConfirmation}>Resend confirmation email</button>}
           </form>
           <p className="auth-alternative">{register ? "Already have an account?" : "New to PocketSeculex?"} <Link href={`${base}/${register ? "login" : "create-account"}`}>{register ? "Sign in" : lgu ? "Request access" : "Create an account"}</Link></p>
           <div className="auth-prototype"><span>YOUR ACCOUNT</span><p>{lgu ? "Confirm your email, then submit your organization details for review from your account. Incident access requires administrator approval." : "Your account and profile are securely stored. Emergency hardware services are separate from account registration."}</p></div>

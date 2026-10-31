@@ -1,8 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { supabaseConfig } from "./lib/supabase/config";
+import { hasSupabaseConfig, supabaseConfig } from "./lib/supabase/config";
 
 export async function proxy(request: NextRequest) {
+  if (!hasSupabaseConfig()) {
+    const response = NextResponse.rewrite(new URL("/auth/setup", request.url));
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
+  }
   let response = NextResponse.next({ request });
   const { url, key } = supabaseConfig();
   const supabase = createServerClient(url, key, {
