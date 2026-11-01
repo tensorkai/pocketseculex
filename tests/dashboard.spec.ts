@@ -98,7 +98,7 @@ test("rescue tracking follows proximity, expires GPS and recovers without replac
   let stale = false;
   let failed = false;
   await page.route("**/rest/v1/responder_locations?**", route => route.fulfill({
-    status: failed ? 503 : 200, contentType: "application/json",
+    status: failed ? 403 : 200, contentType: "application/json",
     body: JSON.stringify(failed ? { message: "Unavailable" } : { latitude, longitude: 120.9842, accuracy_m: 10, recorded_at: new Date(Date.now() - (stale ? 61000 : 0)).toISOString(), incidents: { status: "dispatched" } }),
   }));
   await page.setViewportSize({ width: 375, height: 812 });

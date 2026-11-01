@@ -49,7 +49,10 @@ export default function IncidentMap({ incident, branch, incidentId, status }: { 
       tiles.on("tileerror", () => { if (!cancelled) setError("Street tiles could not load. Open Response for recorded coordinates."); });
       view.setView([12.88, 121.77], 5);
       following.current = true;
-      const observer = new ResizeObserver(() => view.invalidateSize());
+      const observer = new ResizeObserver(() => {
+        view.invalidateSize();
+        if (following.current) bounds.current();
+      });
       observer.observe(host.current);
       cleanup = () => { observer.disconnect(); view.remove(); map.current = null; layers.current = null; bounds.current = () => {}; };
       setReady(true);
@@ -83,7 +86,9 @@ export default function IncidentMap({ incident, branch, incidentId, status }: { 
         L.polyline([[rescuePoint.latitude, rescuePoint.longitude], [userPoint.latitude, userPoint.longitude]], { color: "#28745a", weight: 3, dashArray: "6 9", interactive: false }).addTo(group);
       }
       bounds.current = () => {
-        if (points.length) view.fitBounds(L.latLngBounds(points), { paddingTopLeft: [45, 55], paddingBottomRight: [65, 190], maxZoom: tracking.near ? 17 : 15, animate: false });
+        const size = view.getSize();
+        const landscape = size.x >= 700 && size.y < 450;
+        if (points.length) view.fitBounds(L.latLngBounds(points), { paddingTopLeft: landscape ? [420, 45] : [45, 55], paddingBottomRight: landscape ? [65, 50] : [65, 210], maxZoom: tracking.near ? 17 : 15, animate: false });
         else view.setView([12.88, 121.77], 5);
         following.current = true;
       };
