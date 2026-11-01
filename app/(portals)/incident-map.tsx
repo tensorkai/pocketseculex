@@ -19,7 +19,8 @@ export default function IncidentMap({ incident, branch }: { incident: Point | nu
     async function mount() {
       const L = await import("leaflet");
       if (cancelled || !host.current) return;
-      const view = L.map(host.current, { scrollWheelZoom: false, zoomAnimation: false, fadeAnimation: false });
+      const view = L.map(host.current, { scrollWheelZoom: true, zoomControl: false, zoomAnimation: false, fadeAnimation: false });
+      L.control.zoom({ position: "topright" }).addTo(view);
       map.current = view;
       const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -38,9 +39,9 @@ export default function IncidentMap({ incident, branch }: { incident: Point | nu
           icon: L.divIcon({ className: `response-pin ${kind}`, html: kind === "incident" ? "<span>U</span>" : "<span>+</span>", iconSize: [36, 36], iconAnchor: [18, 18] }),
         }).addTo(view).bindPopup(label);
       }
-      bounds.current = () => points.length ? view.fitBounds(L.latLngBounds(points), { padding: [50, 50], maxZoom: 15, animate: false }) : view.setView([12.88, 121.77], 5);
+      bounds.current = () => points.length ? view.fitBounds(L.latLngBounds(points), { paddingTopLeft: [45, 100], paddingBottomRight: [65, 50], maxZoom: 15, animate: false }) : view.setView([12.88, 121.77], 5);
       bounds.current();
-      const observer = new ResizeObserver(() => view.invalidateSize());
+      const observer = new ResizeObserver(() => { view.invalidateSize(); bounds.current(); });
       observer.observe(host.current);
       cleanup = () => { observer.disconnect(); view.remove(); map.current = null; bounds.current = () => {}; };
       setReady(true);
