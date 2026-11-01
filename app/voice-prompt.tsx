@@ -120,12 +120,13 @@ function VoiceRecorder({ onClose }: { onClose: () => void }) {
       const name = error instanceof DOMException ? error.name : "";
       setMessage(name === "NotAllowedError" ? "Microphone access was denied. Allow microphone access in your browser’s site settings, then try again."
         : name === "NotFoundError" ? "No microphone was found. Connect a microphone and try again."
+        : name === "NotSupportedError" ? "This browser cannot capture microphone audio. Try another browser or device."
         : "The microphone could not start. Check whether another app is using it and try again.");
     }
   }
 
-  return <dialog ref={dialog} className="voice-dialog" aria-labelledby={titleId} onClose={onClose} onCancel={event => { event.preventDefault(); onClose(); }}>
-    <div className="voice-heading"><span className="voice-icon"><Microphone/></span><button type="button" onClick={onClose} aria-label="Close voice prompt">×</button></div>
+  return <dialog ref={dialog} className="voice-dialog" aria-labelledby={titleId} onClose={onClose}>
+    <div className="voice-heading"><span className="voice-icon"><Microphone/></span><button type="button" onClick={() => dialog.current?.close()} aria-label="Close voice prompt">×</button></div>
     <h2 id={titleId}>Your voice prompt</h2>
     <p>Record up to 30 seconds, then listen back.</p>
     <p className="voice-privacy">Audio stays in this browser until you download it. AI replies are not connected yet.</p>

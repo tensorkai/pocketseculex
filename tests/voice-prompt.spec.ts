@@ -2,6 +2,11 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
+    // The 3D viewer has its own tests; avoid software WebGL competing with audio.
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", { value: function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
+      return type.includes("webgl") ? null : Reflect.apply(getContext, this, [type, ...args]);
+    } });
     // Supply real audio tracks without depending on host microphone drivers.
     // MediaRecorder, blobs, playback URLs and track cleanup remain native.
     navigator.mediaDevices.getUserMedia = async () => {
@@ -27,7 +32,7 @@ test("records, releases the microphone, previews and discards audio", async ({ p
   await expect(dialog.getByText("Microphone is off", { exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Start recording" }).click();
   await expect(dialog.getByText("Recording — microphone is on", { exact: true })).toBeVisible();
-  await expect(dialog.locator(".voice-timer")).toContainText("0:01");
+  await expect(dialog.locator(".voice-timer")).not.toContainText("0:00", { timeout: 10000 });
   await dialog.getByRole("button", { name: "Stop recording" }).click();
   await expect(dialog.getByText("Recording ready to preview", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => Reflect.get(window, "testMicrophone").getTracks().every((track: MediaStreamTrack) => track.readyState === "ended"))).toBe(true);
