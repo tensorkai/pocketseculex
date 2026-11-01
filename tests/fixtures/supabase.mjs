@@ -16,6 +16,7 @@ createServer(async (req, res) => {
   for await (const chunk of req) body += chunk;
   const send = (value, code = 200) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); };
   if (url.pathname === '/__test/reset') { status = 'received'; return send({}); }
+  if (url.pathname === '/__test/dispatch') { status = 'dispatched'; return send({}); }
   if (url.pathname === '/') return send({ ready: true });
   let id;
   try { id = JSON.parse(Buffer.from(req.headers.authorization.split(' ')[1].split('.')[1], 'base64url').toString()).sub; } catch {}
@@ -31,6 +32,7 @@ createServer(async (req, res) => {
   if (table === 'organizations') return send(id === pending ? [] : [branch]);
   if (table === 'latest_incident_locations') return send(id === pending ? [] : [{ incident_id: incident.id, latitude: 14.5995, longitude: 120.9842, recorded_at: '2026-10-31T08:05:00Z' }]);
   if (table === 'location_updates') return send({ latitude: 14.5995, longitude: 120.9842, recorded_at: '2026-10-31T08:05:00Z' });
+  if (table === 'responder_locations') return send(null);
   if (table === 'incidents') {
     if (req.method === 'PATCH') {
       if (id !== responder || url.searchParams.get('status') !== `eq.${status}`) return send({ message: 'Conflict' }, 409);

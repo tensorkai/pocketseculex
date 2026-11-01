@@ -48,7 +48,7 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
       <p className="queue-note">Latest 50 incidents · Times in Philippine time</p>
     </aside>
     <div className="map-panel">
-      <IncidentMap key={selected?.id ?? "empty"} incident={incidentPoint} branch={branchPoint}/>
+      <IncidentMap key={selected?.id ?? "empty"} incident={incidentPoint} branch={branchPoint} incidentId={selected?.id ?? null} status={selected?.status ?? ""}/>
       {mapDataError && <p className="dash-notice" role="status">Some branch or location details are unavailable. The map may show the initial incident location. Refresh to try again.</p>}
       {selected ? <div className="response-details" hidden={activeNav !== "Response"}>
         <LiveUpdates />
