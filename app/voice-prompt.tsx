@@ -12,7 +12,7 @@ export default function VoicePrompt() {
   const trigger = useRef<HTMLButtonElement>(null);
   return <>
     <button ref={trigger} type="button" className="voice-launch" aria-label="Open voice prompt" onClick={() => setOpen(true)}><Microphone/><span>Voice prompt</span></button>
-    {open && <VoiceRecorder onClose={() => { setOpen(false); trigger.current?.focus(); }}/ >}
+    {open && <VoiceRecorder onClose={() => { setOpen(false); trigger.current?.focus(); }}/>}
   </>;
 }
 
