@@ -90,3 +90,37 @@ test("pending responders cannot open incident maps", async ({ page, context }) =
   await expect(page.getByRole("region", { name: "Incident and assigned branch map" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Submit access request" })).toBeVisible();
 });
+
+test("rescue tracking follows proximity, expires GPS and recovers without replacing the map", async ({ page, context, request }) => {
+  await session(context, "1");
+  await request.get("http://127.0.0.1:54321/__test/dispatch");
+  let latitude = 14.61;
+  let stale = false;
+  let failed = false;
+  await page.route("**/rest/v1/responder_locations?**", route => route.fulfill({
+    status: failed ? 503 : 200, contentType: "application/json",
+    body: JSON.stringify(failed ? { message: "Unavailable" } : { latitude, longitude: 120.9842, accuracy_m: 10, recorded_at: new Date(Date.now() - (stale ? 61000 : 0)).toISOString(), incidents: { status: "dispatched" } }),
+  }));
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/user/dashboard");
+  await expect(page.getByText("Rescue team en route", { exact: true })).toBeVisible();
+  await expect(page.locator(".response-pin.rescue")).toHaveCount(1);
+  await page.locator(".response-map").evaluate(element => element.setAttribute("data-test-persistent", "yes"));
+  latitude = 14.601;
+  await expect(page.getByText("Rescue team is nearby", { exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("170 m away", { exact: false })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "/tmp/pocketseculex-rescue-tracking.png" });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(page.getByText("Rescue team is nearby", { exact: true })).toBeVisible();
+  await page.screenshot({ path: "/tmp/pocketseculex-rescue-tracking-landscape.png" });
+  stale = true;
+  await expect(page.getByText("Waiting for a fresh GPS signal", { exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.locator(".response-pin.rescue")).toHaveCount(0);
+  stale = false;
+  await expect(page.getByText("Rescue team is nearby", { exact: true })).toBeVisible({ timeout: 10000 });
+  failed = true;
+  await expect(page.getByText("Tracking unavailable", { exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.locator(".response-pin.rescue")).toHaveCount(0);
+  await expect(page.locator(".response-map")).toHaveAttribute("data-test-persistent", "yes");
+});
