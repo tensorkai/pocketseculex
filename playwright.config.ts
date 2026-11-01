@@ -5,15 +5,19 @@ export default defineConfig({
   fullyParallel: true,
   outputDir: "/tmp/pocketseculex-playwright-results",
   use: { baseURL: "http://127.0.0.1:3100", browserName: "chromium" },
-  webServer: {
+  webServer: [{
+    command: "node tests/fixtures/supabase.mjs",
+    url: "http://127.0.0.1:54321",
+    reuseExistingServer: false,
+  }, {
     command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     // Auth requests are mocked in the browser; never depend on a live project.
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "test-public-key",
     },
     timeout: 120000,
-  },
+  }],
 });

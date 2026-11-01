@@ -52,6 +52,14 @@ Run `npm run lint`, `npx tsc --noEmit`, `npm run build`, and `npm run test:e2e`.
 
 ## Integration boundaries
 
+### Dashboard maps and response workspace
+
+The personal and LGU dashboards share an interactive Leaflet incident map, status filters, response progress, recorded-location timestamps, and assigned-branch details. Approved responders can dispatch or resolve incidents; owners see the same status through Realtime refreshes or the Refresh button. Missing coordinates, unassigned branches, failed map tiles, and pending LGU membership have explicit states. Profile editing is collapsible; personal devices and approved branch memberships remain available below the map.
+
+Apply the local-only `supabase/04-response-maps.sql` after the base schema. Each organization currently represents a branch/station. Set real station latitude/longitude and optional contact phone in Supabase; the existing incident organization ID links both views. A security-invoker RPC retrieves latest locations under RLS, and an owner policy exposes only assigned branch records. Users cannot assign themselves to branches or grant responder access.
+
+Map tiles use [OpenStreetMap](https://operations.osmfoundation.org/policies/tiles/) with visible attribution; markers and labels are rendered locally. This is a prototype map service with no availability guarantee. No automatic dispatch, vehicle tracking, directions, or ETA is implemented. Hardware location ingestion remains a separate backend integration. Browser tests use mocked tiles and a local Supabase fixture, so automated tests do not download public map tiles or touch live accounts.
+
 Account authentication, persistent profiles, LGU access requests, RLS-scoped incident/device reads, incident status changes, and incident/location change subscriptions are integrated with Supabase. The homepage SOS walkthrough remains an explicitly labeled simulation; it does not create incidents. Hardware telemetry ingestion, Groq inference, and route computation remain separate integrations, so this is not an operational emergency service. The hardware appearance is a concept, not a manufacturing specification.
 
 ## Assets
