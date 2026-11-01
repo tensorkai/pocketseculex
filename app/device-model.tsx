@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import VoicePrompt from "./voice-prompt";
 
 /** The renderer lives behind this boundary so the rest of the lobby stays usable
  * while WebGL loads, or when the browser cannot provide a graphics context. */
@@ -269,7 +270,7 @@ export default function DeviceModel() {
     return () => { cancelled = true; loadObserver.disconnect(); dispose(); };
   }, []);
 
-  return <div className="product-viewer">
+  return <><VoicePrompt/><div className="product-viewer">
     <div className="model-canvas" ref={host} role="img" aria-label="PocketSeculex 3D concept: smooth dark graphite enclosure, client-view demo screen with device-ready status and response stages, two orange triggers, and a woven bag strap." />
     {status !== "ready" && <div className="model-placeholder" role="status">
       <div className="fallback-strap"/><div className="fallback-shell"><span>pocketseculex</span><div className="fallback-display"><span className="fallback-status">Device ready · DEMO</span><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/></svg><strong>Your everyday lifeline.</strong><span className="fallback-flow">Ready · Signal · Dispatched · Resolved</span></div><div className="fallback-triggers"><i/><i/></div></div>
@@ -279,5 +280,5 @@ export default function DeviceModel() {
       <span>Explore the device</span>
       <div><button aria-label="Rotate device left" disabled={status !== "ready"} onClick={() => controls.current?.rotate(-Math.PI / 6)}>←</button><button aria-label="Reset device view" disabled={status !== "ready"} onClick={() => controls.current?.reset()}>Reset</button><button aria-label="Rotate device right" disabled={status !== "ready"} onClick={() => controls.current?.rotate(Math.PI / 6)}>→</button></div>
     </div>
-  </div>;
+  </div></>;
 }
