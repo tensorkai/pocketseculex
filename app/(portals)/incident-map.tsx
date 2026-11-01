@@ -20,12 +20,11 @@ export default function IncidentMap({ incident, branch }: { incident: Point | nu
       const L = await import("leaflet");
       if (cancelled || !host.current) return;
       const view = L.map(host.current, { scrollWheelZoom: true, zoomControl: false, zoomAnimation: false, fadeAnimation: false });
-      L.control.zoom({ position: "topright" }).addTo(view);
       map.current = view;
       const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(view);
-      tiles.on("tileerror", () => { if (!cancelled) setError("Street tiles could not load. Recorded coordinates remain available below."); });
+      tiles.on("tileerror", () => { if (!cancelled) setError("Street tiles could not load. Open Response for recorded coordinates."); });
       const points: [number, number][] = [];
       const userPoint = latitude !== undefined && longitude !== undefined ? { latitude, longitude, label: label ?? "User location" } : null;
       const branchPoint = stationLatitude !== undefined && stationLongitude !== undefined ? { latitude: stationLatitude, longitude: stationLongitude, label: stationLabel ?? "Assigned branch" } : null;
@@ -41,7 +40,7 @@ export default function IncidentMap({ incident, branch }: { incident: Point | nu
       }
       bounds.current = () => points.length ? view.fitBounds(L.latLngBounds(points), { paddingTopLeft: [45, 100], paddingBottomRight: [65, 50], maxZoom: 15, animate: false }) : view.setView([12.88, 121.77], 5);
       bounds.current();
-      const observer = new ResizeObserver(() => { view.invalidateSize(); bounds.current(); });
+      const observer = new ResizeObserver(() => view.invalidateSize());
       observer.observe(host.current);
       cleanup = () => { observer.disconnect(); view.remove(); map.current = null; bounds.current = () => {}; };
       setReady(true);
@@ -51,9 +50,18 @@ export default function IncidentMap({ incident, branch }: { incident: Point | nu
   }, [latitude, longitude, label, stationLatitude, stationLongitude, stationLabel]);
   return <div className="response-map-wrap">
     <div className="response-map" ref={host} role="region" aria-label="Incident and assigned branch map" />
-    <button type="button" className="map-fit" disabled={!ready} onClick={() => bounds.current()}>Recenter map</button>
+    <button type="button" className="map-fit" aria-label="Recenter map" title="Recenter map" disabled={!ready} onClick={() => bounds.current()}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
+    </button>
+    <details className="map-tools">
+      <summary aria-label="Map tools" title="Map tools"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/><circle cx="10" cy="18" r="2" fill="white"/></svg></summary>
+      <div className="map-tools-content">
+        <div className="map-zoom-actions"><button type="button" disabled={!ready} onClick={() => map.current?.zoomIn()} aria-label="Zoom in">+</button><button type="button" disabled={!ready} onClick={() => map.current?.zoomOut()} aria-label="Zoom out">−</button></div>
+        <p><span className="tool-user">U</span> Recorded user location</p><p><span className="tool-branch">+</span> Assigned branch</p>
+        <small>Station location only; no vehicle tracking.</small>
+      </div>
+    </details>
     {error && <p className="map-error" role="status">{error}</p>}
     {!incident && !branch && <div className="map-empty">No recorded locations yet<span>Your incident and assigned branch will appear here.</span></div>}
-    <div className="map-legend"><span><i className="legend-user"/>User location</span><span><i className="legend-branch"/>Assigned branch</span><small>Station location · no vehicle tracking or route estimate</small></div>
   </div>;
 }

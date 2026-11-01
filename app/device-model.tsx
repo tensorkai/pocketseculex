@@ -21,7 +21,7 @@ export default function DeviceModel() {
 
       const container = host.current;
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       renderer.setClearColor(0x000000, 0);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.05;
@@ -76,8 +76,8 @@ export default function DeviceModel() {
       const thread = new THREE.MeshStandardMaterial({ color: 0x777c74, roughness: 1 });
       for (let i = 0; i < 23; i++) {
         const x = -0.35 + i * 0.032;
-        box(0.006, 1.27, 0.006, 0.002, thread, x, 1.97, -0.112);
-        box(0.006, 1.08, 0.006, 0.002, thread, x, -1.98, -0.112);
+        box(0.006, 1.27, 0.006, 0.002, thread, x, 1.97, -0.112, 1);
+        box(0.006, 1.08, 0.006, 0.002, thread, x, -1.98, -0.112, 1);
       }
       box(0.94, 0.1, 0.16, 0.04, buckle, 0, 2.47, -0.12);
       box(0.94, 0.1, 0.16, 0.04, buckle, 0, 2.08, -0.12);
@@ -89,8 +89,8 @@ export default function DeviceModel() {
       const textures: import("three").Texture[] = [];
       function label(w: number, h: number, x: number, y: number, z: number, draw: (ctx: CanvasRenderingContext2D) => void) {
         const canvas = document.createElement("canvas");
-        canvas.width = 1024;
-        canvas.height = Math.round(1024 * h / w);
+        canvas.width = 512;
+        canvas.height = Math.round(512 * h / w);
         const ctx = canvas.getContext("2d")!;
         ctx.scale(canvas.width / w, canvas.height / h);
         draw(ctx);
@@ -186,7 +186,7 @@ export default function DeviceModel() {
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       function render() {
         frame = 0;
-        if (cancelled || !visible) return;
+        if (cancelled || !visible || document.hidden) return;
         model.rotation.y += (target - model.rotation.y) * (reducedMotion.matches ? 1 : 0.16);
         renderer.render(scene, camera);
         if (Math.abs(target - model.rotation.y) > 0.001) frame = requestAnimationFrame(render);
@@ -196,7 +196,9 @@ export default function DeviceModel() {
         const { width, height } = container.getBoundingClientRect();
         renderer.setSize(width, height);
         camera.aspect = width / Math.max(height, 1);
-        camera.position.z = camera.aspect < 0.7 ? 10.8 : 9.5;
+        // Fit the entire strap and shell inside the canvas, including narrow phones.
+        const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+        camera.position.z = Math.max(3 / Math.tan(verticalFov / 2), 1.7 / (Math.tan(verticalFov / 2) * camera.aspect));
         camera.updateProjectionMatrix();
         requestRender();
       }
@@ -207,6 +209,8 @@ export default function DeviceModel() {
         if (visible) requestRender();
       });
       intersection.observe(container);
+      function visibilityChanged() { if (!document.hidden) requestRender(); }
+      document.addEventListener("visibilitychange", visibilityChanged);
 
       let pointer: number | null = null;
       let previousX = 0;
@@ -227,7 +231,7 @@ export default function DeviceModel() {
       canvas.addEventListener("pointermove", move);
       canvas.addEventListener("pointerup", up);
       canvas.addEventListener("pointercancel", up);
-      function lost(event: Event) { event.preventDefault(); setStatus("fallback"); }
+      function lost(event: Event) { event.preventDefault(); dispose(); setStatus("fallback"); }
       canvas.addEventListener("webglcontextlost", lost);
       controls.current = {
         rotate(amount) { target += amount; requestRender(); },
@@ -239,6 +243,7 @@ export default function DeviceModel() {
         cancelAnimationFrame(frame);
         controls.current = null;
         resizeObserver.disconnect(); intersection.disconnect();
+        document.removeEventListener("visibilitychange", visibilityChanged);
         canvas.removeEventListener("pointerdown", down); canvas.removeEventListener("pointermove", move);
         canvas.removeEventListener("pointerup", up); canvas.removeEventListener("pointercancel", up);
         canvas.removeEventListener("webglcontextlost", lost);
@@ -255,8 +260,13 @@ export default function DeviceModel() {
       };
     }
 
-    mount().catch(() => { if (!cancelled) setStatus("fallback"); });
-    return () => { cancelled = true; dispose(); };
+    const loadObserver = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      loadObserver.disconnect();
+      mount().catch(() => { if (!cancelled) { dispose(); setStatus("fallback"); } });
+    }, { rootMargin: "150px" });
+    if (host.current) loadObserver.observe(host.current);
+    return () => { cancelled = true; loadObserver.disconnect(); dispose(); };
   }, []);
 
   return <div className="product-viewer">

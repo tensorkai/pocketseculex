@@ -72,7 +72,7 @@
 .scene-meta > a span { font-size: 20px; }
 .product-viewer { position: relative; height: 650px; width: 100%; min-width: 0; align-self: center; margin-top: -20px; }
 .product-viewer::before { content: ''; position: absolute; left: 24%; right: 18%; height: 35px; bottom: 68px; background: #293b3040; filter: blur(18px); border-radius: 50%; transform: rotate(-8deg); pointer-events: none; }
-.model-canvas { position: absolute; inset: -22px -35px 34px; cursor: grab; touch-action: pan-y; }
+.model-canvas { position: absolute; inset: 0 0 64px; cursor: grab; touch-action: pan-y; }
 .model-canvas:active { cursor: grabbing; }
 .model-canvas canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
 .viewer-controls { position: absolute; bottom: 7px; left: 14%; right: 6%; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid #344c3e35; padding-top: 12px; color: #344c3e; z-index: 3; font-size: 11px; }
@@ -82,7 +82,7 @@
 .viewer-controls button:hover { background: #f7f6ef80; }
 .viewer-controls button:disabled { opacity: .4; cursor: default; }
 .model-placeholder { position: absolute; inset: 40px 0 65px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.model-placeholder small { position: absolute; bottom: 10px; color: #344c3e; font-size: 11px; text-align: center; }
+.model-placeholder small { position: absolute; bottom: -24px; color: #344c3e; font-size: 11px; text-align: center; background: #f5f3ee; padding: 4px 8px; border-radius: 4px; }
 .fallback-strap { position: absolute; top: 0; bottom: 30px; width: 74px; border-radius: 20px; background: #62685f; transform: rotate(-7deg); }
 .fallback-shell { position: relative; width: 210px; height: 290px; border-radius: 32px; background: linear-gradient(120deg, #303640, #11151b 50%, #1b2028); box-shadow: inset 1px 1px 3px #ffffff24, 10px 12px 0 #0c1016, 24px 30px 45px #293c3040; transform: rotate(-7deg); border: 1px solid #414853; padding: 24px; text-align: center; color: #ecede5; font-size: 10px; }
 .fallback-display { margin: 20px 0; padding: 12px 6px; border: 3px solid #080b10; border-radius: 12px; background: var(--background); height: 140px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: var(--foreground); }
@@ -107,7 +107,7 @@
   .hero h1 { font-size: 53px; letter-spacing: -2.7px; }
   .hero h1 em { letter-spacing: -2.7px; }
   .product-viewer { height: 580px; }
-  .model-canvas { inset: -20px -42px 40px; }
+  .model-canvas { inset: 0 0 64px; }
   .edition-label { font-size: 11px; gap: 10px; }
   .edition-label span { padding-left: 10px; }
   .hero-description { font-size: 14px; }
@@ -164,7 +164,7 @@
   .hero-atmosphere { background: linear-gradient(180deg, #f4f2edfa 0%, #f4f2edf0 25%, #f4f2ed70 51%, #f4f2ed10 73%, #f4f2ede0 100%); }
   .city-backdrop { background-position: 64% bottom; }
   .product-viewer { height: 535px; margin: 12px 0 0; width: 100%; }
-  .model-canvas { inset: -5px -20px 45px; }
+  .model-canvas { inset: 0 0 64px; }
   .viewer-controls { left: 0; right: 0; bottom: 0; font-size: 12px; }
   .product-viewer::before { bottom: 85px; }
   .scene-meta { position: relative; left: auto; right: auto; bottom: auto; width: 100%; padding: 16px 0 15px; font-size: 8px; letter-spacing: 1px; }
@@ -172,4 +172,24 @@
   .feature-strip { padding: 30px 7%; gap: 28px 18px; }
   .feature-strip b { font-size: 11px; }
   .feature-strip small { font-size: 10px; }
+}
+
+/* Keep the preview, copy, and controls in separate layout areas. */
+.hero { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 32px; }
+.hero-content { min-width: 0; }
+.hero h1 { white-space: normal; text-wrap: balance; }
+.hero-actions { flex-wrap: wrap; gap: 12px 24px; }
+.hero-note, .scene-meta > span { display: none; }
+.product-viewer { margin-top: 0; isolation: isolate; }
+.viewer-controls { left: 0; right: 0; bottom: 0; padding: 8px 0 0; gap: 8px; }
+.viewer-controls button:nth-child(2) { font-size: 12px; }
+.scene-meta { position: static; grid-column: 1 / -1; padding: 0 0 16px; justify-content: flex-start; }
+@media (max-width: 900px) {
+  .hero { display: flex; flex-direction: column; height: auto; min-height: 0; padding: 36px 6% 0; }
+  .hero-content { width: 100%; padding: 0; }
+  .hero h1 { font-size: clamp(32px, 6vw, 48px); letter-spacing: -1.5px; }
+  .edition-label { margin-bottom: 20px; }
+  .edition-label span { display: none; }
+  .product-viewer { width: min(100%, 480px); height: 430px; margin: 20px 0 0; flex: none; }
+  .scene-meta { width: 100%; padding: 12px 0; }
 }

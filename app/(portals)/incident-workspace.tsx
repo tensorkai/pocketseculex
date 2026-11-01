@@ -48,7 +48,6 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
       <p className="queue-note">Latest 50 incidents · Times in Philippine time</p>
     </aside>
     <div className="map-panel">
-      <div className="map-topbar"><div className="map-brand"><span className="map-brand-mark"><NavIcon name="pin" /></span><span><b>PocketSeculex</b><small>{responder ? "Response map" : "Your safety map"}</small></span></div><button type="button" className="map-profile" aria-label="Open profile" onClick={() => setActiveNav("Profile")}><NavIcon name="user" /></button></div>
       <IncidentMap key={selected?.id ?? "empty"} incident={incidentPoint} branch={branchPoint}/>
       {mapDataError && <p className="dash-notice" role="status">Some branch or location details are unavailable. The map may show the initial incident location. Refresh to try again.</p>}
       {selected ? <div className="response-details" hidden={activeNav !== "Response"}>
