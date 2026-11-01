@@ -5,6 +5,18 @@ import { coordinates, statusLabel, type Branch, type Incident, type IncidentLoca
 import IncidentMap from "./incident-map";
 import { IncidentActions } from "./dashboard-controls";
 
+type NavIcon = "map" | "pin" | "route" | "bell" | "user";
+function NavIcon({ name }: { name: NavIcon }) {
+  const paths = {
+    map: <><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15m6-12v15"/></>,
+    pin: <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></>,
+    route: <><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h3a3 3 0 0 0 3-3v-3a3 3 0 0 1 3-3h1"/></>,
+    bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></>,
+    user: <><circle cx="12" cy="8" r="3"/><path d="M5 21a7 7 0 0 1 14 0"/></>,
+  }[name];
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths}</svg>;
+}
+
 function date(value: string) { return new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
 
 export default function IncidentWorkspace({ incidents, branches, locations, responder, error, mapDataError }: {
@@ -22,6 +34,7 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
   const stationLatitude = station?.[0], stationLongitude = station?.[1], stationName = branch?.name;
   const incidentPoint = latitude !== undefined && longitude !== undefined ? { latitude, longitude, label: "Recorded user location" } : null;
   const branchPoint = stationLatitude !== undefined && stationLongitude !== undefined ? { latitude: stationLatitude, longitude: stationLongitude, label: stationName ?? "Assigned branch" } : null;
+  const [activeNav, setActiveNav] = useState("Map");
   return <section className="response-workspace" id="response" aria-label={responder ? "Incident response workspace" : "Your safety map"}>
     <aside className="incident-queue">
       <div className="panel-heading"><div><span className="dash-eyebrow">{responder ? "RESPONSE QUEUE" : "YOUR ACTIVITY"}</span><h2>{responder ? "Incidents" : "Your incidents"}</h2></div><span className="queue-count">{filtered.length}</span></div>
@@ -35,7 +48,8 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
       <p className="queue-note">Latest 50 incidents · Times in Philippine time</p>
     </aside>
     <div className="map-panel">
-      <div className="panel-heading"><div><span className="dash-eyebrow">{responder ? "SHARED SITUATIONAL VIEW" : "CONNECTED TO YOUR RESPONSE TEAM"}</span><h2>{selected ? "Incident overview" : "Your safety map"}</h2></div>{selected && <span className={`status-pill ${selected.status}`}>{statusLabel(selected.status)}</span>}</div>
+      <div className="map-topbar"><div className="map-brand"><span className="map-brand-mark"><NavIcon name="pin" /></span><span><b>PocketSeculex</b><small>{responder ? "Live response map" : "Your safety map"}</small></span></div><button type="button" className="map-profile" aria-label="Open profile"><NavIcon name="user" /></button></div>
+      <div className="map-context"><span className="live-indicator"><i /> LIVE</span><strong>{selected ? "Incident overview" : "Ready when you are"}</strong>{selected && <span className={`status-pill ${selected.status}`}>{statusLabel(selected.status)}</span>}</div>
       <IncidentMap key={selected?.id ?? "empty"} incident={incidentPoint} branch={branchPoint}/>
       {mapDataError && <p className="dash-notice" role="status">Some branch or location details are unavailable. The map may show the initial incident location. Refresh to try again.</p>}
       {selected ? <div className="response-details">
@@ -46,5 +60,6 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
         <IncidentActions key={`${selected.id}:${selected.status}`} id={selected.id} ownerId={selected.owner_id} responder={responder} status={selected.status}/>
       </div> : <div className="map-idle"><h3>{responder ? "Ready for the next response." : "Your connection, in one place."}</h3><p>Select an incident to see its recorded location, assigned branch, and response progress.</p></div>}
     </div>
+    <nav className="map-bottom-nav" aria-label="Map navigation">{["Map", "Incidents", "Routes", "Alerts", "Profile"].map((item, index) => { const icon: NavIcon[] = ["map", "pin", "route", "bell", "user"]; return <button type="button" key={item} className={activeNav === item ? "active" : ""} aria-current={activeNav === item ? "page" : undefined} onClick={() => setActiveNav(item)}><NavIcon name={icon[index]} /><span>{item}</span>{item === "Alerts" && incidents.some(i => i.status === "received") && <i className="nav-badge" />}</button>; })}</nav>
   </section>;
 }
