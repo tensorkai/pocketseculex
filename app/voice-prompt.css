@@ -1,0 +1,21 @@
+.voice-launch { position: fixed; z-index: 20; right: max(16px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 12px 18px; border: 1px solid #d0dbd2; border-radius: 28px; background: #2d4938; color: #fffefa; box-shadow: 0 4px 18px #183b2d30; font-size: 14px; }
+.response-workspace .voice-launch { top: max(12px, env(safe-area-inset-top)); bottom: auto; left: max(12px, env(safe-area-inset-left)); right: auto; z-index: 5; }
+.voice-dialog { margin: auto; padding: 24px; width: min(440px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid #c7d0c5; border-radius: 20px; background: #fffefa; color: #253d32; box-shadow: 0 16px 60px #0004; }
+.voice-dialog::backdrop { background: #12251f99; }
+.voice-heading { display: flex; align-items: center; justify-content: space-between; }
+.voice-icon { display: grid; place-items: center; width: 48px; height: 48px; background: #e7eee6; border-radius: 50%; }
+.voice-heading button { background: transparent; border: 0; font-size: 28px; min-width: 44px; min-height: 44px; }
+.voice-dialog h2 { margin: 16px 0 8px; font-size: 26px; letter-spacing: -.6px; }
+.voice-dialog p { margin: 8px 0; font-size: 15px; color: #526459; line-height: 1.6; }
+.voice-dialog .voice-privacy { font-size: 13px; }
+.voice-status { margin-top: 20px; font-size: 14px; font-weight: 600; }
+.voice-timer { margin-top: 12px; font-size: 32px; font-variant-numeric: tabular-nums; }
+.voice-timer span { font-size: 16px; color: #526459; }
+.voice-dialog .voice-error { color: #a52d20; }
+.voice-playback { display: block; width: 100%; margin-top: 16px; }
+.voice-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.voice-actions button, .voice-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 14px; border: 1px solid #c7d0c5; border-radius: 10px; font-size: 14px; background: transparent; }
+.voice-actions .voice-primary { background: #2d4938; color: #fffefa; border-color: #2d4938; }
+.voice-actions button:disabled { cursor: wait; opacity: .6; }
+.voice-launch:hover, .voice-actions .voice-primary:hover { background: #42614c; }
+.voice-dialog button:focus-visible, .voice-dialog a:focus-visible, .voice-dialog audio:focus-visible, .voice-launch:focus-visible { outline: 3px solid #b84021; outline-offset: 3px; }

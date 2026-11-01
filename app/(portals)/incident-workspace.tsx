@@ -4,6 +4,7 @@ import { useState } from "react";
 import { coordinates, statusLabel, type Branch, type Incident, type IncidentLocation } from "@/lib/incidents";
 import IncidentMap from "./incident-map";
 import { IncidentActions, LiveUpdates } from "./dashboard-controls";
+import VoicePrompt from "../voice-prompt";
 
 type NavIcon = "map" | "pin" | "route" | "bell" | "user";
 function NavIcon({ name }: { name: NavIcon }) {
@@ -36,6 +37,7 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
   const branchPoint = stationLatitude !== undefined && stationLongitude !== undefined ? { latitude: stationLatitude, longitude: stationLongitude, label: stationName ?? "Assigned branch" } : null;
   const [activeNav, setActiveNav] = useState("Map");
   return <section className="response-workspace" data-view={activeNav} id="response" aria-label={responder ? "Incident response workspace" : "Your safety map"}>
+    {!responder && activeNav === "Map" && <VoicePrompt/>}
     <aside className="incident-queue" hidden={activeNav !== "Incidents"}>
       <div className="panel-heading"><div><span className="dash-eyebrow">{responder ? "RESPONSE QUEUE" : "YOUR ACTIVITY"}</span><h2>{responder ? "Incidents" : "Your incidents"}</h2></div><span className="queue-count">{filtered.length}</span></div>
       <label className="filter-label" htmlFor="incident-filter">Show incidents</label>
