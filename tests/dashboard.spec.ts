@@ -18,13 +18,14 @@ test("personal map shows the same branch and response status updated by LGU", as
   await session(personal, "1"); await session(lgu, "2");
   const userPage = await personal.newPage(), responderPage = await lgu.newPage();
   await userPage.goto("http://127.0.0.1:3100/user/dashboard");
-  await expect(userPage.getByRole("heading", { name: "Welcome back, Sam." })).toBeVisible();
+  await userPage.getByRole("button", { name: "Response", exact: true }).click();
   await expect(userPage.getByRole("heading", { name: "Central Rescue Station" })).toBeVisible();
   await expect(userPage.getByRole("heading", { name: "14.59950, 120.98420" })).toBeVisible();
   await expect(userPage.locator(".response-pin")).toHaveCount(2);
   await expect(userPage.getByRole("button", { name: "Mark dispatched" })).toHaveCount(0);
   await userPage.screenshot({ path: "/tmp/pocketseculex-personal-dashboard.png", fullPage: true });
   await responderPage.goto("http://127.0.0.1:3100/lgu/dashboard");
+  await responderPage.getByRole("button", { name: "Response", exact: true }).click();
   await expect(responderPage.getByRole("heading", { name: "Central Rescue Station" })).toBeVisible();
   await responderPage.getByRole("button", { name: "Mark dispatched" }).click();
   await expect(responderPage.locator('.response-progress [aria-current="step"]')).toContainText("Team dispatched");
@@ -32,8 +33,10 @@ test("personal map shows the same branch and response status updated by LGU", as
   await expect(userPage.locator('.response-progress [aria-current="step"]')).toContainText("Team dispatched");
   await responderPage.screenshot({ path: "/tmp/pocketseculex-lgu-dashboard.png", fullPage: true });
   await responderPage.getByRole("button", { name: "Mark resolved" }).click();
+  await responderPage.getByRole("button", { name: "Incidents", exact: true }).click();
   await expect(responderPage.getByRole("heading", { name: "No active incidents" })).toBeVisible();
   await responderPage.getByLabel("Show incidents").selectOption("resolved");
+  await responderPage.getByRole("button", { name: "Response", exact: true }).click();
   await expect(responderPage.locator('.response-progress [aria-current="step"]')).toContainText("Resolved");
   await expect(responderPage.getByRole("button", { name: "Mark dispatched" })).toHaveCount(0);
   await personal.close(); await lgu.close();
@@ -45,10 +48,39 @@ test("mobile dashboard remains usable when map tiles fail", async ({ page, conte
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/user/dashboard");
   await expect(page.getByText("Street tiles could not load.", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Response", exact: true }).click();
   await expect(page.getByRole("heading", { name: "14.59950, 120.98420" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByText("Edit contact details", { exact: true }).click();
   await expect(page.getByLabel("Full name", { exact: true })).toBeVisible();
+});
+
+test("map fills the viewport above navigation without overlapping panels", async ({ page, context }) => {
+  await session(context, "1");
+  await page.goto("/user/dashboard");
+  // Development-only toolbar is not part of the deployed app navigation.
+  await page.addStyleTag({ content: "nextjs-portal { display: none; }" });
+  for (const viewport of [{ width: 375, height: 812 }, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await expect(page.getByRole("button", { name: "Recenter map" })).toBeEnabled();
+    const map = await page.locator(".response-map").boundingBox();
+    const nav = await page.getByRole("navigation", { name: "Map navigation" }).boundingBox();
+    expect(map!.x).toBe(0);
+    expect(map!.y).toBe(0);
+    expect(map!.width).toBe(viewport.width);
+    expect(map!.height).toBe(nav!.y);
+    expect(nav!.y + nav!.height).toBe(viewport.height);
+    await expect(page.locator(".incident-queue")).toBeHidden();
+    await expect(page.locator(".response-details")).toBeHidden();
+    await page.getByRole("button", { name: "Incidents", exact: true }).click();
+    await expect(page.getByLabel("Show incidents")).toBeVisible();
+    await page.getByRole("button", { name: "Response", exact: true }).click();
+    await expect(page.locator(".incident-queue")).toBeHidden();
+    await expect(page.locator(".response-details")).toBeVisible();
+    await page.getByRole("button", { name: "Map", exact: true }).click();
+    await page.screenshot({ path: `/tmp/pocketseculex-map-${viewport.width}.png` });
+  }
 });
 
 test("pending responders cannot open incident maps", async ({ page, context }) => {

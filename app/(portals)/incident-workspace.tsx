@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { coordinates, statusLabel, type Branch, type Incident, type IncidentLocation } from "@/lib/incidents";
 import IncidentMap from "./incident-map";
-import { IncidentActions } from "./dashboard-controls";
+import { IncidentActions, LiveUpdates } from "./dashboard-controls";
 
 type NavIcon = "map" | "pin" | "route" | "bell" | "user";
 function NavIcon({ name }: { name: NavIcon }) {
@@ -35,8 +35,8 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
   const incidentPoint = latitude !== undefined && longitude !== undefined ? { latitude, longitude, label: "Recorded user location" } : null;
   const branchPoint = stationLatitude !== undefined && stationLongitude !== undefined ? { latitude: stationLatitude, longitude: stationLongitude, label: stationName ?? "Assigned branch" } : null;
   const [activeNav, setActiveNav] = useState("Map");
-  return <section className="response-workspace" id="response" aria-label={responder ? "Incident response workspace" : "Your safety map"}>
-    <aside className="incident-queue">
+  return <section className="response-workspace" data-view={activeNav} id="response" aria-label={responder ? "Incident response workspace" : "Your safety map"}>
+    <aside className="incident-queue" hidden={activeNav !== "Incidents"}>
       <div className="panel-heading"><div><span className="dash-eyebrow">{responder ? "RESPONSE QUEUE" : "YOUR ACTIVITY"}</span><h2>{responder ? "Incidents" : "Your incidents"}</h2></div><span className="queue-count">{filtered.length}</span></div>
       <label className="filter-label" htmlFor="incident-filter">Show incidents</label>
       <select id="incident-filter" value={filter} onChange={e => { setFilter(e.target.value); setSelectedId(null); }}>
@@ -48,18 +48,18 @@ export default function IncidentWorkspace({ incidents, branches, locations, resp
       <p className="queue-note">Latest 50 incidents · Times in Philippine time</p>
     </aside>
     <div className="map-panel">
-      <div className="map-topbar"><div className="map-brand"><span className="map-brand-mark"><NavIcon name="pin" /></span><span><b>PocketSeculex</b><small>{responder ? "Live response map" : "Your safety map"}</small></span></div><button type="button" className="map-profile" aria-label="Open profile"><NavIcon name="user" /></button></div>
-      <div className="map-context"><span className="live-indicator"><i /> LIVE</span><strong>{selected ? "Incident overview" : "Ready when you are"}</strong>{selected && <span className={`status-pill ${selected.status}`}>{statusLabel(selected.status)}</span>}</div>
+      <div className="map-topbar"><div className="map-brand"><span className="map-brand-mark"><NavIcon name="pin" /></span><span><b>PocketSeculex</b><small>{responder ? "Response map" : "Your safety map"}</small></span></div><button type="button" className="map-profile" aria-label="Open profile" onClick={() => setActiveNav("Profile")}><NavIcon name="user" /></button></div>
       <IncidentMap key={selected?.id ?? "empty"} incident={incidentPoint} branch={branchPoint}/>
       {mapDataError && <p className="dash-notice" role="status">Some branch or location details are unavailable. The map may show the initial incident location. Refresh to try again.</p>}
-      {selected ? <div className="response-details">
+      {selected ? <div className="response-details" hidden={activeNav !== "Response"}>
+        <LiveUpdates />
         <ol className="response-progress" aria-label="Response progress">{["received", "dispatched", "resolved"].map((stage, index) => <li key={stage} className={selected.status === stage ? "current" : ""} aria-current={selected.status === stage ? "step" : undefined}><b>{index + 1}</b>{statusLabel(stage)}</li>)}</ol>
         <div className="response-detail-grid"><div><span className="dash-eyebrow">{selected.status === "received" ? "ASSIGNED BRANCH" : "RESPONDING BRANCH"}</span><h3>{branch?.name ?? (selected.organization_id ? "Branch details unavailable" : "Awaiting assignment")}</h3><p>{branch?.jurisdiction ?? "A branch will appear once this incident is assigned."}</p>{branch && !station && <p>Station location has not been provided.</p>}{branch?.contact_phone && <p>Branch contact: <a href={`tel:${branch.contact_phone.replace(/[^+\d]/g, "")}`}>{branch.contact_phone}</a></p>}</div>
           <div><span className="dash-eyebrow">{latest ? "LATEST RECORDED LOCATION" : "INITIAL INCIDENT LOCATION"}</span><h3>{point ? `${point[0].toFixed(5)}, ${point[1].toFixed(5)}` : "Awaiting location"}</h3><p>{date(latest?.recorded_at ?? selected.triggered_at)} · PHT</p><p>Recorded position; the user may have moved.</p></div></div>
         <div className="incident-brief"><h3>Incident brief</h3><p>{selected.brief_status === "ready" && selected.brief ? selected.brief : selected.brief_status === "failed" ? "Brief unavailable. Assess the incident directly." : "No brief available yet."}</p></div>
         <IncidentActions key={`${selected.id}:${selected.status}`} id={selected.id} ownerId={selected.owner_id} responder={responder} status={selected.status}/>
-      </div> : <div className="map-idle"><h3>{responder ? "Ready for the next response." : "Your connection, in one place."}</h3><p>Select an incident to see its recorded location, assigned branch, and response progress.</p></div>}
+      </div> : <div className="map-idle" hidden={activeNav !== "Response"}><LiveUpdates /><h3>{responder ? "Ready for the next response." : "Your connection, in one place."}</h3><p>Select an incident to see its recorded location, assigned branch, and response progress.</p></div>}
     </div>
-    <nav className="map-bottom-nav" aria-label="Map navigation">{["Map", "Incidents", "Routes", "Alerts", "Profile"].map((item, index) => { const icon: NavIcon[] = ["map", "pin", "route", "bell", "user"]; return <button type="button" key={item} className={activeNav === item ? "active" : ""} aria-current={activeNav === item ? "page" : undefined} onClick={() => setActiveNav(item)}><NavIcon name={icon[index]} /><span>{item}</span>{item === "Alerts" && incidents.some(i => i.status === "received") && <i className="nav-badge" />}</button>; })}</nav>
+    <nav className="map-bottom-nav" aria-label="Map navigation">{["Map", "Incidents", "Response", "Profile"].map((item, index) => { const icon: NavIcon[] = ["map", "pin", "bell", "user"]; return <button type="button" key={item} className={activeNav === item ? "active" : ""} aria-pressed={activeNav === item} onClick={() => setActiveNav(item)}><NavIcon name={icon[index]} /><span>{item}</span>{item === "Response" && incidents.some(i => i.status === "received") && <i className="nav-badge" />}</button>; })}</nav>
   </section>;
 }
